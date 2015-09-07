@@ -1,0 +1,114 @@
+import csv
+import math
+
+class Player:
+
+    def __init__(self):
+        self.Name = ''
+        self.Salary = 0
+        self.Team = ''
+        self.GameInfo = ''
+        self.Position = ''
+        self.AvgPoints = 0
+        self.Projected_teamPTS = 0
+        self.HOME_AWAY = 0
+        self.Game = Game()
+
+def HOME_calculateProjectedTeamPTS(Over,Spread):
+    if(float(Spread) > 0):
+        Projected_teamPTS = (float(Over)/2) - (abs(float(Spread))/2)
+    else:
+        Projected_teamPTS = (float(Over)/2) + (abs(float(Spread))/2)
+    return abs(Projected_teamPTS)
+
+def AWAY_calculateProjectedTeamPTS(Home_Projected,Over):
+    return (float(Over) - Home_Projected)
+
+class Game:
+
+    def __init__(self):
+        self.Home = ''
+        self.Away = ''
+        self.openSpread = 0
+        self.openOverUnder = 0
+        self.carbSports_Spread = 0
+        self.carbSports_OverUnder = 0
+        self.sportsBookAG_Spread = 0
+        self.sportsBookAG_OverUnder = 0
+        self.fiveDimes_Spread = 0
+        self.fiveDimes_OverUnder = 0
+        self.gameTimeBets_Spread = 0
+        self.gameTimeBets_OverUnder = 0
+        self.TopBet_Spread = 0
+        self.TopBet_OverUnder = 0
+        self.WestGate_Spread = 0
+        self.WestGate_OverUnder = 0
+
+def loadOdds(list):
+    oddList = []
+    with open('C:\progData\oddsForPython') as oddsFile:
+        count = 0
+        for line in oddsFile:
+            x = list[count].Game
+            x.__setattr__('Away',oddsFile.readline().strip())
+            x.__setattr__('Home',oddsFile.readline().strip())
+            x.__setattr__('openSpread',oddsFile.readline().strip())
+            x.__setattr__('openOverUnder',oddsFile.readline().strip())
+            x.__setattr__('carbSports_Spread',oddsFile.readline().strip())
+            x.__setattr__('carbSports_OverUnder',oddsFile.readline().strip())
+            x.__setattr__('sportsBookAG_Spread',oddsFile.readline().strip())
+            x.__setattr__('sportsBookAG_OverUnder',oddsFile.readline().strip())
+            x.__setattr__('fiveDimes_Spread',oddsFile.readline().strip())
+            x.__setattr__('fiveDimes_OverUnder',oddsFile.readline().strip())
+            x.__setattr__('gameTimeBets_Spread',oddsFile.readline().strip())
+            x.__setattr__('gameTimeBets_OverUnder',oddsFile.readline().strip())
+            x.__setattr__('TopBet_Spread',oddsFile.readline().strip())
+            x.__setattr__('TopBet_OverUnder',oddsFile.readline().strip())
+            x.__setattr__('WestGate_Spread',oddsFile.readline().strip())
+            x.__setattr__('WestGate_OverUnder',oddsFile.readline().strip())
+            if (len(x.Home) > 0): #make sure its not inserting an empty record
+                oddList.insert(count, x)
+            count += 1
+    return oddList
+
+
+#load the information into the class record from the imported DK file
+
+#NFL FILE - cc was introduced because it messes up the string path - was a quick fix but need to figure out why at late time
+#with open('C:\progData\NFL\dk_Players\NFL_910_DK.csv') as csvFile:
+#College FILE
+#with open('C:\progData\collegeFootball\dk_Players\cfb_File_DK_905.csv') as csvFile:
+# MLB FILE
+# NBA FILE
+
+list = []
+index = 0
+
+with open('C:\progData\ccFootballNFL\dk_Players\ccNFL_910_DK.csv') as csvFile:
+    reader = csv.DictReader(csvFile)
+    for row in reader:
+        x = Player()
+        x.__setattr__('Position', row.get('Position'))
+        x.__setattr__('Name', row.get('Name'))
+        x.__setattr__('Team', row.get('teamAbbrev'))
+        x.__setattr__('GameInfo', row.get('GameInfo'))
+        x.__setattr__('Salary', row.get('Salary'))
+        x.__setattr__('AvgPointsPerGame', row.get('AvgPointsPerGame'))
+        list.insert(index, x)
+        index += 1
+
+
+print("loading oddlist....")
+odds = loadOdds(list)
+
+for things in odds:
+    print("Away:",things.Away,"Home:", things.Home,"OPEN_spread:",things.openSpread,"OPEN_over:",things.openOverUnder,"WestGate_spread:",things.WestGate_Spread,
+          "WestGate_Over:",things.WestGate_OverUnder,"Projected_Home",HOME_calculateProjectedTeamPTS(things.WestGate_Spread,things.WestGate_OverUnder),
+          "Projected_Away", AWAY_calculateProjectedTeamPTS(HOME_calculateProjectedTeamPTS(things.WestGate_Spread,things.WestGate_OverUnder),things.WestGate_OverUnder))
+
+
+
+
+for item in list:
+    if(item.Position in 'QB'):
+        print(item.Salary,item.Name, item.Position, item.Team, "Home",item.Game.Home)
