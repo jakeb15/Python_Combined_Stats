@@ -1,18 +1,49 @@
+from __future__ import absolute_import, print_function
 import csv
 import math
+import tweepy
+import time
+import Twitter_Functions
+
+Search_Twitter = False;
 
 class Player:
 
     def __init__(self):
         self.Name = ''
         self.Salary = 0
+        self.Salary_Last_Week = 0
+        self.Salary_Diff = 0
         self.Team = ''
+        self.Opponent = ''
         self.GameInfo = ''
         self.Position = ''
         self.AvgPoints = 0
         self.Projected_teamPTS = 0
         self.HOME_AWAY = 0
+        self.newRosterAdd = 0
+        self.Floor = 0
+        self.Ceiling = 0
+        self.Avg = 0
+        self.FC_Proj = 0
+        self.My_Proj = 0
+        self.Consistency = 0
+        self.Value = 0
+        self.Actual_Score = 0
+        self.Actual_Value = 0
         self.Game = Game()
+
+    def SalaryChange(self,Salary,Salary_Last_Week):
+        self.Salary_Diff = Salary_Last_Week - Salary
+        return self.Salary_Diff
+
+class FantasyCruncher:
+    def __init__(self):
+        self.Player = ''
+
+
+
+
 
 def HOME_calculateProjectedTeamPTS(Over,Spread):
     if(float(Spread) > 0):
@@ -44,12 +75,12 @@ class Game:
         self.WestGate_Spread = 0
         self.WestGate_OverUnder = 0
 
-def loadOdds(list):
+def loadOdds():
     oddList = []
     with open('C:\progData\oddsForPython') as oddsFile:
         count = 0
         for line in oddsFile:
-            x = list[count].Game
+            x = Game()
             x.__setattr__('Away',oddsFile.readline().strip())
             x.__setattr__('Home',oddsFile.readline().strip())
             x.__setattr__('openSpread',oddsFile.readline().strip())
@@ -71,6 +102,29 @@ def loadOdds(list):
             count += 1
     return oddList
 
+def FantasyCruncherParse(list):
+    #C:\progData\ccFootballNFL\dk_Players\CruncherDataWeek1_final
+    with open('C:\progData\ccFootball\dk_Players\CruncherDataWeek4_final') as cruncher_Data:
+        index = 0
+        for line in csv.reader(cruncher_Data, delimiter="\t"):
+            x = FantasyCruncher()
+            x.__setattr__('Player', line)
+            list.insert(index,x)
+            index +=1
+    return list
+
+
+
+
+def list_to_CSV(list):
+    with open('C:\progData\Game_Data.csv', 'w') as fp:
+        wr = csv.writer(fp, quoting=csv.QUOTE_ALL)
+        first_row = ["Salary","LastWeekSalary","SalaryChange","Name","Pos","Team","GameInfo","CarbonSports_Over","CarbonSports_Spread","Projected_Total_Away","Projected_Total_Home","Actual_Score","Actual_Value","Value","Consistency","AVG","Ceiling","Floor"]
+        wr.writerow(first_row)
+        for item in list:
+            newList = [item.Salary,item.Salary_Last_Week,item.Salary_Diff, item.Name, item.Position, item.Team,item.Game.Away + "@" + item.Game.Home ,item.Game.carbSports_OverUnder,item.Game.carbSports_Spread,AWAY_calculateProjectedTeamPTS(HOME_calculateProjectedTeamPTS(item.Game.carbSports_OverUnder,item.Game.carbSports_Spread),item.Game.carbSports_OverUnder),HOME_calculateProjectedTeamPTS(item.Game.carbSports_OverUnder,item.Game.carbSports_Spread),
+                       item.Actual_Score,item.Actual_Value,item.Value,item.Consistency,item.Avg,item.Ceiling,item.Floor]
+            wr.writerow(newList)
 
 #load the information into the class record from the imported DK file
 
@@ -81,10 +135,15 @@ def loadOdds(list):
 # MLB FILE
 # NBA FILE
 
+
+#loads data from fantasy Cruncher into a list for last weeks results
+fantasyData = []
+fantasyData = FantasyCruncherParse(fantasyData)
+
+#loads the DraftKigns CSV file into a list called list
 list = []
 index = 0
-
-with open('C:\progData\ccFootballNFL\dk_Players\ccNFL_910_DK.csv') as csvFile:
+with open('C:\progData\ccFootball\dk_Players\week_3.csv') as csvFile:
     reader = csv.DictReader(csvFile)
     for row in reader:
         x = Player()
@@ -92,23 +151,134 @@ with open('C:\progData\ccFootballNFL\dk_Players\ccNFL_910_DK.csv') as csvFile:
         x.__setattr__('Name', row.get('Name'))
         x.__setattr__('Team', row.get('teamAbbrev'))
         x.__setattr__('GameInfo', row.get('GameInfo'))
-        x.__setattr__('Salary', row.get('Salary'))
+        x.__setattr__('Salary_Last_Week', row.get('Salary'))
         x.__setattr__('AvgPointsPerGame', row.get('AvgPointsPerGame'))
         list.insert(index, x)
         index += 1
 
 
-print("loading oddlist....")
-odds = loadOdds(list)
+newPlayerFlag = False
 
-for things in odds:
-    print("Away:",things.Away,"Home:", things.Home,"OPEN_spread:",things.openSpread,"OPEN_over:",things.openOverUnder,"WestGate_spread:",things.WestGate_Spread,
-          "WestGate_Over:",things.WestGate_OverUnder,"Projected_Home",HOME_calculateProjectedTeamPTS(things.WestGate_Spread,things.WestGate_OverUnder),
-          "Projected_Away", AWAY_calculateProjectedTeamPTS(HOME_calculateProjectedTeamPTS(things.WestGate_Spread,things.WestGate_OverUnder),things.WestGate_OverUnder))
+with open('C:\progData\ccFootball\dk_Players\week_5.csv') as csvFile:
+    reader = csv.DictReader(csvFile)
+    for row in reader:
+        for item in list:
+            if(row.get('Name') in item.Name):
+                item.Salary = row.get('Salary')
+                newPlayerFlag = True
+        if(newPlayerFlag is False):
+            print(row.get('Name'),"is not in last weeks roster")
+            x = Player()
+            x.__setattr__('Position', row.get('Position'))
+            x.__setattr__('Name', row.get('Name'))
+            x.__setattr__('Team', row.get('teamAbbrev'))
+            x.__setattr__('GameInfo', row.get('GameInfo'))
+            x.__setattr__('Salary', row.get('Salary'))
+            x.__setattr__('Salary_Last_Week', 0)
+            x.__setattr__('AvgPointsPerGame', row.get('AvgPointsPerGame'))
+            x.__setattr__('newRosterAdd',1)
+            list.insert(len(list),x)
+        newPlayerFlag = False
 
 
+#loads the odds into a class record called games and then loads games into a list called odds
+list_of_Games = loadOdds()
 
+
+#attach game record  to player records
+for players in list:
+    for games in list_of_Games:
+        if(games.Home.lower() == players.Team.lower() or games.Away.lower() == players.Team.lower()):
+            players.Game.__setattr__('Away',games.Away)
+            players.Game.__setattr__('Home',games.Home)
+            players.Game.__setattr__('openSpread',games.openSpread)
+            players.Game.__setattr__('openOverUnder',games.openOverUnder)
+            players.Game.__setattr__('carbSports_Spread',games.carbSports_Spread)
+            players.Game.__setattr__('carbSports_OverUnder',games.carbSports_OverUnder)
+            players.Game.__setattr__('sportsBookAG_Spread',games.sportsBookAG_Spread)
+            players.Game.__setattr__('sportsBookAG_OverUnder',games.sportsBookAG_OverUnder)
+            players.Game.__setattr__('fiveDimes_Spread',games.fiveDimes_Spread)
+            players.Game.__setattr__('fiveDimes_OverUnder',games.fiveDimes_OverUnder)
+            players.Game.__setattr__('gameTimeBets_Spread',games.gameTimeBets_Spread)
+            players.Game.__setattr__('gameTimeBets_OverUnder',games.gameTimeBets_OverUnder)
+            players.Game.__setattr__('TopBet_Spread',games.TopBet_Spread)
+            players.Game.__setattr__('TopBet_OverUnder',games.TopBet_OverUnder)
+            players.Game.__setattr__('WestGate_Spread',games.WestGate_Spread)
+            players.Game.__setattr__('WestGate_OverUnder',games.WestGate_OverUnder)
+            if(players.Team in games.Away or players.Team in games.Home):
+                if(players.Team in games.Away):
+                    players.__setattr__('Opponent',games.Home)
+                else:
+                    players.__setattr__('Opponent',games.Away)
+
+
+#combine fantasy cruncher data to orginal list
 
 for item in list:
-    if(item.Position in 'QB'):
-        print(item.Salary,item.Name, item.Position, item.Team, "Home",item.Game.Home)
+    for record in fantasyData:
+        if(record.Player[0] in item.Name):
+            if(record.Player[4] in 'null'):
+                item.Floor = 0
+            else:
+                item.Floor = record.Player[4]
+            if(record.Player[5] in 'null'):
+                item.Floor = 0
+            else:
+                item.Ceiling = record.Player[5]
+            if(record.Player[6] in 'null'):
+                item.Floor = 0
+            else:
+                item.Avg = record.Player[6]
+            if(record.Player[7] in 'null'):
+                item.Floor = 0
+            else:
+                item.FC_Proj = record.Player[7]
+            if(record.Player[8] in 'null'):
+                item.Floor = 0
+            else:
+                item.My_Proj = record.Player[8]
+            if(record.Player[9] in 'null'):
+                item.Floor = 0
+            else:
+                item.Consistency = record.Player[9]
+            if(record.Player[10] in 'null'):
+                item.Floor = 0
+            else:
+                item.Value = record.Player[10]
+            if(record.Player[11] in 'null'):
+                item.Floor = 0
+            else:
+                item.Actual_Score = record.Player[11]
+            if(record.Player[12] in 'null'):
+                item.Floor = 0
+            else:
+                item.Actual_Value = record.Player[12]
+
+
+
+
+
+
+#for things in list_of_Games:
+#    print("Away:",things.Away,"Home:", things.Home,"OPEN_spread:",things.openSpread,"OPEN_over:",things.openOverUnder,"WestGate_spread:",things.WestGate_Spread,
+#          "WestGate_Over:",things.WestGate_OverUnder,"Projected_Home",HOME_calculateProjectedTeamPTS(things.WestGate_Spread,things.WestGate_OverUnder),
+#          "Projected_Away", AWAY_calculateProjectedTeamPTS(HOME_calculateProjectedTeamPTS(things.WestGate_Spread,things.WestGate_OverUnder),things.WestGate_OverUnder))
+
+
+
+#print stuff to make sure it works
+for item in list:
+    item.SalaryChange(int(item.Salary),int(item.Salary_Last_Week))
+    print(item.Actual_Score,item.Actual_Value,item.Salary,item.Salary_Last_Week,item.Salary_Diff,item.Name, item.Position, item.Game.Away,"@",item.Game.Home,"Spread",item.Game.carbSports_Spread, "Over/Under",item.Game.carbSports_OverUnder,"Projected_Home",
+              HOME_calculateProjectedTeamPTS(item.Game.carbSports_OverUnder,item.Game.carbSports_Spread),"Projected_Away",AWAY_calculateProjectedTeamPTS(HOME_calculateProjectedTeamPTS(item.Game.carbSports_OverUnder,item.Game.carbSports_Spread),item.Game.carbSports_OverUnder))
+
+
+#run twitter bot
+if Search_Twitter == True:
+    Twitter_Functions.TwitterBot(list)
+else:
+    print("failed")
+
+
+#exports list to CSV check function to see what is being thrown into the cSV file
+list_to_CSV(list)
